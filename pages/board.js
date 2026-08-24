@@ -57,11 +57,7 @@ export default function Board() {
   }
 
   function isHelping(seat) {
-    // 直近のヘルプ要請がある生徒（15分以内）を「ヘルプ希望中」として目立たせる
-    const recent = helps.find((h) => h.seat_number === seat);
-    if (!recent) return false;
-    const minutesAgo = (Date.now() - new Date(recent.created_at).getTime()) / 60000;
-    return minutesAgo < 15;
+    return helps.some((h) => h.seat_number === seat && !h.resolved);
   }
 
   if (!session) return null;

@@ -55,7 +55,7 @@ export default function Teacher() {
   }
 
   function helpCountFor(seat) {
-    return helps.filter((h) => h.seat_number === seat).length;
+    return helps.filter((h) => h.seat_number === seat && !h.resolved).length;
   }
 
   if (!authed) {
@@ -129,6 +129,7 @@ export default function Teacher() {
           <p key={h.id} className="muted">
             {new Date(h.created_at).toLocaleTimeString("ja-JP")}　
             出席番号{h.seat_number}　{h.grammar} Step{h.step}
+            {h.resolved ? "　✅解決済み" : "　🙋対応中"}
           </p>
         ))}
         {helps.length === 0 && <p className="muted">ヘルプ要請はまだありません</p>}
