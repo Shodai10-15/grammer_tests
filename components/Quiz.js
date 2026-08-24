@@ -1,8 +1,19 @@
 import { useState } from "react";
 
+function speakEnglish(text) {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  const utter = new window.SpeechSynthesisUtterance(text);
+  utter.lang = "en-US";
+  utter.rate = 0.9;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utter);
+}
+
 // questions: [{id, question, choice_a..d, correct, note}]
+// audioMode: true の場合（Listening用）、英文は隠して音声のみで出題し、
+// 解答後に初めて英文を表示する
 // onFinish(score, total) が呼ばれたら親側で結果を保存する
-export default function Quiz({ questions, onFinish }) {
+export default function Quiz({ questions, onFinish, audioMode }) {
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState(null);
   const [answered, setAnswered] = useState(false);
@@ -42,7 +53,20 @@ export default function Quiz({ questions, onFinish }) {
         問題 {index + 1} / {questions.length}
       </p>
       <div className="card">
-        <p style={{ fontSize: 18, fontWeight: "bold" }}>{q.question}</p>
+        {audioMode ? (
+          <div style={{ marginBottom: 12 }}>
+            {!answered && (
+              <button className="btn secondary" onClick={() => speakEnglish(q.question)}>
+                🔊 音声を聞く（何度でもOK）
+              </button>
+            )}
+            {answered && (
+              <p style={{ fontSize: 18, fontWeight: "bold" }}>{q.question}</p>
+            )}
+          </div>
+        ) : (
+          <p style={{ fontSize: 18, fontWeight: "bold" }}>{q.question}</p>
+        )}
         {choices.map(([letter, text]) => {
           let cls = "choice";
           if (answered) {
