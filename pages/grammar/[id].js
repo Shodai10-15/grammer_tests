@@ -3,6 +3,9 @@ import { useRouter } from "next/router";
 import { supabase } from "../../lib/supabase";
 import { getSession } from "../../lib/session";
 import Quiz from "../../components/Quiz";
+import TypedBlank from "../../components/TypedBlank";
+import DictationShadowing from "../../components/DictationShadowing";
+import TypeThenSpeak from "../../components/TypeThenSpeak";
 import HelpButton from "../../components/HelpButton";
 
 const GRAMMAR_LABEL = {
@@ -20,12 +23,12 @@ const LISTENING_INSTRUCTIONS = {
 const STEP1_SKILLS = [
   { key: "L", label: "🎧 Listening", desc: "音声を聞いて選ぶ" },
   { key: "R", label: "📖 Reading", desc: "読んで意味を選ぶ" },
-  { key: "W", label: "✍️ Writing", desc: "穴埋めで確認する" },
+  { key: "W", label: "✍️ Writing", desc: "穴埋めをタイプする" },
 ];
 
 const STEP2_SKILLS = [
-  { key: "S", label: "🗣️ Speaking＋音声", desc: "聞いてすぐリピート" },
-  { key: "W", label: "✍️ Writing", desc: "パターンプラクティス" },
+  { key: "S", label: "🎧🗣️ ディクテーション＆シャドーイング", desc: "書き取って→音読する" },
+  { key: "W", label: "✍️🗣️ 英作文→発話", desc: "書いて→日本語だけ見て話す" },
 ];
 
 export default function GrammarPage() {
@@ -123,6 +126,18 @@ export default function GrammarPage() {
 
   if (!session || !grammar) return null;
 
+  const isStep1Writing = mode && mode.step === 1 && mode.skill === "W";
+  const isStep1Choice = mode && mode.step === 1 && (mode.skill === "L" || mode.skill === "R");
+  const isStep2Dictation = mode && mode.step === 2 && mode.skill === "S";
+  const isStep2TypeSpeak = mode && mode.step === 2 && mode.skill === "W";
+
+  // Step2 W（英作文→発話）用に question/correct を japanese/english の形へ詰め替える
+  const typeSpeakQuestions = questions.map((q) => ({
+    id: q.id,
+    japanese: q.question,
+    english: q.correct,
+  }));
+
   return (
     <div className="page">
       <div className="header">
@@ -161,7 +176,7 @@ export default function GrammarPage() {
               Step2　暗記・習熟（合格ライン）
             </p>
             <p className="muted">
-              {step1Done ? "満点を取れば合格！間違えたら何度でも挑戦しよう" : "先にStep1を1つ終えよう"}
+              {step1Done ? "満点・80%以上の一致で合格！何度でも挑戦しよう" : "先にStep1を1つ終えよう"}
             </p>
             <div className="grid">
               {STEP2_SKILLS.map((s) => (
@@ -203,20 +218,25 @@ export default function GrammarPage() {
 
       {mode && mode.step !== 3 && !result && loadingQ && <p>読み込み中...</p>}
 
-      {mode && (mode.step === 1 || mode.step === 2) && mode.skill !== "S" && questions.length > 0 && !result && (
+      {isStep1Choice && questions.length > 0 && !result && (
         <Quiz
           questions={questions}
           onFinish={handleQuizFinish}
-          audioMode={mode.step === 1 && mode.skill === "L"}
+          audioMode={mode.skill === "L"}
           instructionText={LISTENING_INSTRUCTIONS[grammar]}
         />
       )}
 
-      {mode && mode.step === 2 && mode.skill === "S" && !result && (
-        <SpeakingPractice
-          questions={questions}
-          onFinish={(score, total) => handleQuizFinish(score, total)}
-        />
+      {isStep1Writing && questions.length > 0 && !result && (
+        <TypedBlank questions={questions} onFinish={handleQuizFinish} />
+      )}
+
+      {isStep2Dictation && questions.length > 0 && !result && (
+        <DictationShadowing questions={questions} onFinish={handleQuizFinish} />
+      )}
+
+      {isStep2TypeSpeak && questions.length > 0 && !result && (
+        <TypeThenSpeak questions={typeSpeakQuestions} onFinish={handleQuizFinish} />
       )}
 
       {mode && mode.step === 3 && (
@@ -236,7 +256,7 @@ export default function GrammarPage() {
           </p>
           {mode.step === 2 && result.score !== result.total && (
             <p style={{ color: "#c0392b" }}>
-              満点ではなかったので、もう一度挑戦してみよう！
+              まだ合格ラインに届いていません。もう一度挑戦してみよう！
             </p>
           )}
           <div className="btn-row">
@@ -266,64 +286,6 @@ export default function GrammarPage() {
         grammar={grammar}
         step={mode ? mode.step : 0}
       />
-    </div>
-  );
-}
-
-function speak(text) {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
-  const utter = new window.SpeechSynthesisUtterance(text);
-  utter.lang = "en-US";
-  utter.rate = 0.9;
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utter);
-}
-
-function SpeakingPractice({ questions, onFinish }) {
-  const [checked, setChecked] = useState({});
-
-  function toggle(id) {
-    setChecked((c) => ({ ...c, [id]: !c[id] }));
-  }
-
-  const allDone = questions.length > 0 && questions.every((q) => checked[q.id]);
-
-  return (
-    <div className="card">
-      <p className="muted">
-        音声を聞いて、すぐに真似して声に出そう。言えたらチェックしよう（自己録画してもOK）。
-      </p>
-      {questions.map((q) => (
-        <div
-          key={q.id}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "10px 0",
-            borderBottom: "1px solid #eee",
-          }}
-        >
-          <button className="btn secondary" onClick={() => speak(q.question)}>
-            🔊
-          </button>
-          <span style={{ flex: 1 }}>{q.question}</span>
-          <input
-            type="checkbox"
-            checked={!!checked[q.id]}
-            onChange={() => toggle(q.id)}
-            style={{ width: 22, height: 22 }}
-          />
-        </div>
-      ))}
-      <button
-        className="btn"
-        style={{ marginTop: 16 }}
-        disabled={!allDone}
-        onClick={() => onFinish(questions.length, questions.length)}
-      >
-        Step2（Speaking）を完了する
-      </button>
     </div>
   );
 }
