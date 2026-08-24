@@ -11,6 +11,12 @@ const GRAMMAR_LABEL = {
   G3: "感情形容詞＋that",
 };
 
+const LISTENING_INSTRUCTIONS = {
+  G1: "音声を聞いて、どの発明品について話しているか選ぼう！",
+  G2: "音声を聞いて、誰が誰に何を教えているか選ぼう！",
+  G3: "音声を聞いて、使われている気持ちを表す単語を選ぼう！",
+};
+
 const STEP1_SKILLS = [
   { key: "L", label: "🎧 Listening", desc: "音声を聞いて選ぶ" },
   { key: "R", label: "📖 Reading", desc: "読んで意味を選ぶ" },
@@ -202,6 +208,7 @@ export default function GrammarPage() {
           questions={questions}
           onFinish={handleQuizFinish}
           audioMode={mode.step === 1 && mode.skill === "L"}
+          instructionText={LISTENING_INSTRUCTIONS[grammar]}
         />
       )}
 

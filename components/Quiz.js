@@ -4,8 +4,9 @@ import AudioPlayer from "./AudioPlayer";
 // questions: [{id, question, choice_a..d, correct, note}]
 // audioMode: true の場合（Listening用）、英文は隠して音声のみで出題し、
 // 解答後に初めて英文を表示する
+// instructionText: audioMode時にページ上部に常に表示する問題文（指示文）
 // onFinish(score, total) が呼ばれたら親側で結果を保存する
-export default function Quiz({ questions, onFinish, audioMode }) {
+export default function Quiz({ questions, onFinish, audioMode, instructionText }) {
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState(null);
   const [answered, setAnswered] = useState(false);
@@ -44,6 +45,20 @@ export default function Quiz({ questions, onFinish, audioMode }) {
       <p className="muted">
         問題 {index + 1} / {questions.length}
       </p>
+      {audioMode && instructionText && (
+        <p
+          style={{
+            fontWeight: "bold",
+            fontSize: 16,
+            background: "var(--bg-accent, #eaf4f2)",
+            padding: "10px 14px",
+            borderRadius: 10,
+            marginBottom: 12,
+          }}
+        >
+          🎧 {instructionText}
+        </p>
+      )}
       <div className="card">
         {audioMode ? (
           <div style={{ marginBottom: 12 }}>
