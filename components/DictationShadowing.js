@@ -1,20 +1,23 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AudioPlayer from "./AudioPlayer";
-import { listenOnce, isSpeechRecognitionSupported } from "../lib/speechRecognition";
-import { wordAccuracy, exactMatch } from "../lib/textSimilarity";
+import { isSpeechRecognitionSupported } from "../lib/speechRecognition";
+import { wordAccuracy, exactMatch, wordMatchDetail } from "../lib/textSimilarity";
 
 const PASS_THRESHOLD = 80;
 
-// questions: [{id, question}]  question = 正解の英文
-// フェーズ: dictation（聞いて書き取る）→ shadowing（見ながら音読して一致度を判定）
+// questions: [{id, question, note}]  question = 正解の英文、note = 日本語訳（ヒント用）
+// フェーズ: dictation（聞いて書き取る・一致率80%以上で次へ）
+//         → shadowing（英文非表示・再生と同時に録音、再生終了で自動停止、単語ごとに正誤表示）
 export default function DictationShadowing({ questions, onFinish }) {
   const [index, setIndex] = useState(0);
-  const [phase, setPhase] = useState("dictation"); // dictation | shadowing | done
+  const [phase, setPhase] = useState("dictation");
   const [input, setInput] = useState("");
-  const [dictationResult, setDictationResult] = useState(null); // {correct, accuracy}
+  const [showHint, setShowHint] = useState(false);
+  const [dictationResult, setDictationResult] = useState(null);
   const [listening, setListening] = useState(false);
-  const [shadowResult, setShadowResult] = useState(null); // {accuracy, transcript}
+  const [shadowResult, setShadowResult] = useState(null);
   const [error, setError] = useState("");
+  const recognizerRef = useRef(null);
 
   const supported = isSpeechRecognitionSupported();
   const q = questions[index];
@@ -27,13 +30,14 @@ export default function DictationShadowing({ questions, onFinish }) {
     setError("");
     const correct = exactMatch(q.question, input);
     const accuracy = wordAccuracy(q.question, input);
-    setDictationResult({ correct, accuracy });
+    setDictationResult({ correct, accuracy, passed: correct || accuracy >= PASS_THRESHOLD });
   }
 
   function goToShadowing() {
     setPhase("shadowing");
     setDictationResult(null);
     setInput("");
+    setShowHint(false);
   }
 
   function retryDictation() {
@@ -46,20 +50,61 @@ export default function DictationShadowing({ questions, onFinish }) {
       setError("このブラウザは音声認識に対応していません（Chrome、またはEdgeでお試しください）");
       return;
     }
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+
     setError("");
     setListening(true);
     setShadowResult(null);
-    listenOnce({
-      onResult: (transcript) => {
-        const accuracy = wordAccuracy(q.question, transcript);
-        setShadowResult({ accuracy, transcript });
-      },
-      onError: (err) => {
-        setError("うまく聞き取れませんでした（" + err + "）。もう一度試そう");
-      },
-      onEnd: () => setListening(false),
-    });
+
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognizer = new SR();
+    recognizer.lang = "en-US";
+    recognizer.continuous = true;
+    recognizer.interimResults = false;
+    let recognizedText = "";
+
+    recognizer.onresult = (e) => {
+      for (let i = 0; i < e.results.length; i++) {
+        recognizedText += " " + e.results[i][0].transcript;
+      }
+    };
+    recognizer.onerror = (e) => {
+      setError("うまく聞き取れませんでした（" + e.error + "）。もう一度試そう");
+    };
+    recognizer.onend = () => {
+      setListening(false);
+      const result = wordMatchDetail(q.question, recognizedText);
+      setShadowResult({ ...result, transcript: recognizedText.trim() });
+    };
+
+    recognizerRef.current = recognizer;
+    recognizer.start();
+
+    // 音声再生と録音（音声認識）を同時に開始し、再生終了で自動的に録音を止める
+    window.speechSynthesis.cancel();
+    const utter = new window.SpeechSynthesisUtterance(q.question);
+    utter.lang = "en-US";
+    utter.rate = 0.75;
+    utter.onend = () => {
+      // 発話の余韻を少し待ってから止める
+      setTimeout(() => {
+        if (recognizerRef.current) recognizerRef.current.stop();
+      }, 900);
+    };
+    utter.onerror = () => {
+      if (recognizerRef.current) recognizerRef.current.stop();
+    };
+    window.speechSynthesis.speak(utter);
   }
+
+  useEffect(() => {
+    return () => {
+      if (recognizerRef.current) recognizerRef.current.stop();
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   function nextQuestion() {
     if (index + 1 < questions.length) {
@@ -68,13 +113,14 @@ export default function DictationShadowing({ questions, onFinish }) {
       setInput("");
       setDictationResult(null);
       setShadowResult(null);
+      setShowHint(false);
       setError("");
     } else {
       onFinish(questions.length, questions.length);
     }
   }
 
-  const shadowPassed = shadowResult && shadowResult.accuracy >= PASS_THRESHOLD;
+  const shadowPassed = shadowResult && shadowResult.ratio >= PASS_THRESHOLD;
 
   return (
     <div>
@@ -89,7 +135,7 @@ export default function DictationShadowing({ questions, onFinish }) {
       {phase === "dictation" && (
         <div className="card">
           <p className="muted" style={{ marginBottom: 8 }}>
-            音声を聞いて、聞こえた英文をそのまま入力しよう
+            音声を聞いて、聞こえた英文をそのまま入力しよう（一致率80%以上で合格）
           </p>
           <AudioPlayer text={q.question} />
           <input
@@ -100,9 +146,21 @@ export default function DictationShadowing({ questions, onFinish }) {
             style={{ marginTop: 12 }}
             disabled={!!dictationResult}
           />
+          <div className="btn-row" style={{ marginTop: 8 }}>
+            {!dictationResult && (
+              <button className="btn secondary" onClick={() => setShowHint((h) => !h)}>
+                💡 ヒント
+              </button>
+            )}
+          </div>
+          {showHint && q.note && (
+            <p className="muted" style={{ marginTop: 6 }}>
+              日本語訳：{q.note}
+            </p>
+          )}
           {error && <p style={{ color: "var(--danger, #c0392b)", fontSize: 13 }}>{error}</p>}
           {!dictationResult && (
-            <button className="btn" onClick={checkDictation}>
+            <button className="btn" style={{ marginTop: 8 }} onClick={checkDictation}>
               答え合わせ
             </button>
           )}
@@ -110,18 +168,21 @@ export default function DictationShadowing({ questions, onFinish }) {
             <div style={{ marginTop: 8 }}>
               <p>
                 {dictationResult.correct
-                  ? "✅ 正解！"
-                  : `一致度 ${dictationResult.accuracy}%（正解: ${q.question}）`}
+                  ? "✅ 完全一致！"
+                  : `一致率 ${dictationResult.accuracy}%（正解: ${q.question}）`}
+                {!dictationResult.correct && dictationResult.passed && "　→ 80%以上なので合格です"}
               </p>
               <div className="btn-row">
-                {!dictationResult.correct && (
+                {!dictationResult.passed && (
                   <button className="btn secondary" onClick={retryDictation}>
                     もう一度書く
                   </button>
                 )}
-                <button className="btn" onClick={goToShadowing}>
-                  シャドーイングへ進む
-                </button>
+                {dictationResult.passed && (
+                  <button className="btn" onClick={goToShadowing}>
+                    シャドーイングへ進む
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -131,30 +192,45 @@ export default function DictationShadowing({ questions, onFinish }) {
       {phase === "shadowing" && (
         <div className="card">
           <p className="muted" style={{ marginBottom: 8 }}>
-            英文を見ながら、音声のあとに続いて声に出して読もう（80%以上の一致で合格）
+            英文は表示されません。ボタンを押すと音声が流れるので、聞こえた通りに同時に声に出して読もう（シャドーイング）。再生が終わると自動で録音も止まります。
           </p>
-          <p style={{ fontSize: 18, fontWeight: "bold" }}>{q.question}</p>
-          <AudioPlayer text={q.question} />
           {!supported && (
-            <p style={{ color: "var(--danger, #c0392b)", fontSize: 13, marginTop: 8 }}>
+            <p style={{ color: "var(--danger, #c0392b)", fontSize: 13 }}>
               このブラウザは音声認識に対応していません（Chrome、またはEdgeでお試しください）
             </p>
           )}
           <button
             className="btn"
-            style={{ marginTop: 12 }}
             onClick={startShadowing}
             disabled={listening || !supported}
           >
-            {listening ? "🎤 聞き取り中..." : "🎤 話す"}
+            {listening ? "🔊🎤 再生・録音中..." : "🔊🎤 再生しながら話す"}
           </button>
           {error && <p style={{ color: "var(--danger, #c0392b)", fontSize: 13 }}>{error}</p>}
           {shadowResult && (
-            <div style={{ marginTop: 8 }}>
-              <p className="muted">認識結果: {shadowResult.transcript}</p>
+            <div style={{ marginTop: 12 }}>
+              <p style={{ fontSize: 16, lineHeight: 2 }}>
+                {shadowResult.detail.map((d, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      display: "inline-block",
+                      margin: "0 4px 4px 0",
+                      padding: "2px 8px",
+                      borderRadius: 6,
+                      background: d.matched ? "#dff3e6" : "#fbe4e1",
+                      color: d.matched ? "#2e8b57" : "#c0392b",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {d.word}
+                  </span>
+                ))}
+              </p>
+              <p className="muted">認識結果: {shadowResult.transcript || "（聞き取れませんでした）"}</p>
               <p>
-                一致度 {shadowResult.accuracy}%　
-                {shadowPassed ? "✅ 合格！" : "もう少し！もう一度話してみよう"}
+                一致率 {shadowResult.ratio}%　
+                {shadowPassed ? "✅ 合格！" : "もう少し！赤い単語をはっきり発音してもう一度話してみよう"}
               </p>
               <div className="btn-row">
                 {!shadowPassed && (

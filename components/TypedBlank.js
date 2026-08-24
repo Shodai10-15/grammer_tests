@@ -2,10 +2,12 @@ import { useState } from "react";
 import { normalize } from "../lib/textSimilarity";
 
 // questions: [{id, question, correct, note}]
-// question内の「___」が空欄。correctは正解の単語（英語1語想定）。
+// question内の「___」が空欄（複数可）。
+// correctは正解（空欄が複数ある場合は "show|how" のように "|" 区切りで空欄の数だけ用意する）。
+// noteは日本語訳。常に文の上に表示する（訳がないと穴埋めができないため）。
 export default function TypedBlank({ questions, onFinish }) {
   const [index, setIndex] = useState(0);
-  const [input, setInput] = useState("");
+  const [inputs, setInputs] = useState([]);
   const [answered, setAnswered] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [score, setScore] = useState(0);
@@ -13,14 +15,24 @@ export default function TypedBlank({ questions, onFinish }) {
 
   const q = questions[index];
   const parts = q.question.split("___");
+  const blankCount = parts.length - 1;
+  const correctParts = (q.correct || "").split("|");
+
+  function setInput(i, value) {
+    const next = [...inputs];
+    next[i] = value;
+    setInputs(next);
+  }
 
   function submit() {
-    if (!input.trim()) {
-      setError("単語を入力してから答え合わせしよう");
+    if (inputs.filter(Boolean).length < blankCount) {
+      setError("すべての空欄を入力してから答え合わせしよう");
       return;
     }
     setError("");
-    const correct = normalize(input) === normalize(q.correct);
+    const correct = correctParts.every(
+      (c, i) => normalize(inputs[i] || "") === normalize(c)
+    );
     setIsCorrect(correct);
     setAnswered(true);
     if (correct) setScore((s) => s + 1);
@@ -29,7 +41,7 @@ export default function TypedBlank({ questions, onFinish }) {
   function next() {
     if (index + 1 < questions.length) {
       setIndex(index + 1);
-      setInput("");
+      setInputs([]);
       setAnswered(false);
       setError("");
     } else {
@@ -46,23 +58,46 @@ export default function TypedBlank({ questions, onFinish }) {
         問題 {index + 1} / {questions.length}
       </p>
       <div className="card">
-        <p style={{ fontSize: 18, fontWeight: "bold", lineHeight: 1.8 }}>
-          {parts[0]}
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            disabled={answered}
+        {q.note && (
+          <p
             style={{
-              display: "inline-block",
-              width: 120,
-              margin: "0 6px",
-              textAlign: "center",
-              borderColor: answered ? (isCorrect ? "var(--ok, #2e8b57)" : "var(--danger, #c0392b)") : undefined,
+              background: "var(--bg-accent, #eaf4f2)",
+              padding: "8px 12px",
+              borderRadius: 8,
+              fontWeight: "bold",
+              fontSize: 15,
+              marginBottom: 12,
             }}
-            placeholder="英単語"
-          />
-          {parts[1]}
+          >
+            日本語訳：{q.note}
+          </p>
+        )}
+        <p style={{ fontSize: 18, fontWeight: "bold", lineHeight: 2.2 }}>
+          {parts.map((part, i) => (
+            <span key={i}>
+              {part}
+              {i < blankCount && (
+                <input
+                  type="text"
+                  value={inputs[i] || ""}
+                  onChange={(e) => setInput(i, e.target.value)}
+                  disabled={answered}
+                  style={{
+                    display: "inline-block",
+                    width: 110,
+                    margin: "0 6px",
+                    textAlign: "center",
+                    borderColor: answered
+                      ? isCorrect
+                        ? "var(--ok, #2e8b57)"
+                        : "var(--danger, #c0392b)"
+                      : undefined,
+                  }}
+                  placeholder="英語"
+                />
+              )}
+            </span>
+          ))}
         </p>
         {error && <p style={{ color: "var(--danger, #c0392b)", fontSize: 13 }}>{error}</p>}
         {!answered && (
@@ -73,8 +108,7 @@ export default function TypedBlank({ questions, onFinish }) {
         {answered && (
           <div style={{ marginTop: 8 }}>
             <p>
-              {isCorrect ? "✅ 正解！" : `❌ 不正解（正解: ${q.correct}）`}
-              {q.note ? `　（${q.note}）` : ""}
+              {isCorrect ? "✅ 正解！" : `❌ 不正解（正解: ${correctParts.join(" / ")}）`}
             </p>
             <button className="btn" onClick={next}>
               {index + 1 < questions.length ? "次の問題へ" : "結果を見る"}

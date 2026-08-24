@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { listenOnce, isSpeechRecognitionSupported } from "../lib/speechRecognition";
-import { wordAccuracy, exactMatch } from "../lib/textSimilarity";
+import { wordAccuracy, exactMatch, wordMatchDetail } from "../lib/textSimilarity";
 
 const PASS_THRESHOLD = 80;
+const TIME_LIMIT_SEC = 15;
 
 // questions: [{id, japanese, english}]
-// フェーズ: write（日本語を見て英作文をタイプ）→ speak（英語を隠して日本語だけ見て発話）
+// フェーズ: write（日本語を見て英作文をタイプ）
+//         → speak（英語を隠して日本語だけ見て発話。フェーズ開始と同時に15秒のタイマーが動き、
+//            時間内に合格ラインに届かないと「時間切れ」になる）
 export default function TypeThenSpeak({ questions, onFinish }) {
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState("write");
@@ -14,6 +17,9 @@ export default function TypeThenSpeak({ questions, onFinish }) {
   const [listening, setListening] = useState(false);
   const [speakResult, setSpeakResult] = useState(null);
   const [error, setError] = useState("");
+  const [timeLeft, setTimeLeft] = useState(TIME_LIMIT_SEC);
+  const [timedOut, setTimedOut] = useState(false);
+  const timerRef = useRef(null);
 
   const supported = isSpeechRecognitionSupported();
   const q = questions[index];
@@ -40,18 +46,57 @@ export default function TypeThenSpeak({ questions, onFinish }) {
     setInput("");
   }
 
+  // speakフェーズに入った瞬間から15秒のカウントダウンを開始する
+  useEffect(() => {
+    if (phase !== "speak") return;
+    setTimeLeft(TIME_LIMIT_SEC);
+    setTimedOut(false);
+    const start = performance.now();
+    const timer = setInterval(() => {
+      const elapsed = (performance.now() - start) / 1000;
+      const remaining = Math.max(0, Math.ceil(TIME_LIMIT_SEC - elapsed));
+      setTimeLeft(remaining);
+      if (remaining <= 0) {
+        clearInterval(timer);
+        setTimedOut(true);
+      }
+    }, 200);
+    timerRef.current = timer;
+    return () => clearInterval(timer);
+  }, [phase, index]);
+
+  function restartTimer() {
+    setTimedOut(false);
+    setTimeLeft(TIME_LIMIT_SEC);
+    setSpeakResult(null);
+    setError("");
+    if (timerRef.current) clearInterval(timerRef.current);
+    const start = performance.now();
+    const timer = setInterval(() => {
+      const elapsed = (performance.now() - start) / 1000;
+      const remaining = Math.max(0, Math.ceil(TIME_LIMIT_SEC - elapsed));
+      setTimeLeft(remaining);
+      if (remaining <= 0) {
+        clearInterval(timer);
+        setTimedOut(true);
+      }
+    }, 200);
+    timerRef.current = timer;
+  }
+
   function startSpeak() {
     if (!supported) {
       setError("このブラウザは音声認識に対応していません（Chrome、またはEdgeでお試しください）");
       return;
     }
+    if (timedOut) return;
     setError("");
     setListening(true);
     setSpeakResult(null);
     listenOnce({
       onResult: (transcript) => {
-        const accuracy = wordAccuracy(q.english, transcript);
-        setSpeakResult({ accuracy, transcript });
+        const result = wordMatchDetail(q.english, transcript);
+        setSpeakResult({ ...result, transcript });
       },
       onError: (err) => {
         setError("うまく聞き取れませんでした（" + err + "）。もう一度試そう");
@@ -61,6 +106,7 @@ export default function TypeThenSpeak({ questions, onFinish }) {
   }
 
   function nextQuestion() {
+    if (timerRef.current) clearInterval(timerRef.current);
     if (index + 1 < questions.length) {
       setIndex(index + 1);
       setPhase("write");
@@ -73,7 +119,7 @@ export default function TypeThenSpeak({ questions, onFinish }) {
     }
   }
 
-  const speakPassed = speakResult && speakResult.accuracy >= PASS_THRESHOLD;
+  const speakPassed = speakResult && speakResult.ratio >= PASS_THRESHOLD && !timedOut;
 
   return (
     <div>
@@ -82,7 +128,7 @@ export default function TypeThenSpeak({ questions, onFinish }) {
       </div>
       <p className="muted">
         問題 {index + 1} / {questions.length}　
-        {phase === "write" ? "①英作文" : "②発話（80%以上で合格）"}
+        {phase === "write" ? "①英作文" : "②発話（80%以上・15秒以内で合格）"}
       </p>
 
       <div className="card">
@@ -131,6 +177,21 @@ export default function TypeThenSpeak({ questions, onFinish }) {
             <p className="muted" style={{ marginTop: 8 }}>
               英語は表示されません。日本語だけを見て、声に出して英語で言おう
             </p>
+            <p
+              style={{
+                fontSize: 22,
+                fontWeight: "bold",
+                color: timeLeft <= 5 ? "var(--danger, #c0392b)" : "var(--text-primary, #23303a)",
+                marginTop: 8,
+              }}
+            >
+              ⏱ 残り {timeLeft} 秒
+            </p>
+            {timedOut && !speakPassed && (
+              <p style={{ color: "var(--danger, #c0392b)", fontWeight: "bold" }}>
+                ⏰ 時間切れ！もう一度チャレンジしよう
+              </p>
+            )}
             {!supported && (
               <p style={{ color: "var(--danger, #c0392b)", fontSize: 13 }}>
                 このブラウザは音声認識に対応していません（Chrome、またはEdgeでお試しください）
@@ -140,20 +201,25 @@ export default function TypeThenSpeak({ questions, onFinish }) {
               className="btn"
               style={{ marginTop: 8 }}
               onClick={startSpeak}
-              disabled={listening || !supported}
+              disabled={listening || !supported || timedOut}
             >
               {listening ? "🎤 聞き取り中..." : "🎤 話す"}
             </button>
+            {timedOut && (
+              <button className="btn secondary" style={{ marginTop: 8, marginLeft: 8 }} onClick={restartTimer}>
+                🔄 もう一度（15秒リセット）
+              </button>
+            )}
             {error && <p style={{ color: "var(--danger, #c0392b)", fontSize: 13 }}>{error}</p>}
             {speakResult && (
               <div style={{ marginTop: 8 }}>
                 <p className="muted">認識結果: {speakResult.transcript}</p>
                 <p>
-                  一致度 {speakResult.accuracy}%　
-                  {speakPassed ? "✅ 合格！" : "もう少し！もう一度話してみよう"}
+                  一致率 {speakResult.ratio}%　
+                  {speakPassed ? "✅ 合格！" : timedOut ? "" : "もう少し！もう一度話してみよう"}
                 </p>
                 <div className="btn-row">
-                  {!speakPassed && (
+                  {!speakPassed && !timedOut && (
                     <button className="btn secondary" onClick={startSpeak}>
                       もう一度話す
                     </button>
