@@ -1,13 +1,5 @@
 import { useState } from "react";
-
-function speakEnglish(text) {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
-  const utter = new window.SpeechSynthesisUtterance(text);
-  utter.lang = "en-US";
-  utter.rate = 0.9;
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utter);
-}
+import AudioPlayer from "./AudioPlayer";
 
 // questions: [{id, question, choice_a..d, correct, note}]
 // audioMode: true の場合（Listening用）、英文は隠して音声のみで出題し、
@@ -55,11 +47,7 @@ export default function Quiz({ questions, onFinish, audioMode }) {
       <div className="card">
         {audioMode ? (
           <div style={{ marginBottom: 12 }}>
-            {!answered && (
-              <button className="btn secondary" onClick={() => speakEnglish(q.question)}>
-                🔊 音声を聞く（何度でもOK）
-              </button>
-            )}
+            {!answered && <AudioPlayer text={q.question} />}
             {answered && (
               <p style={{ fontSize: 18, fontWeight: "bold" }}>{q.question}</p>
             )}
