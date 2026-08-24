@@ -1,0 +1,74 @@
+import { useState } from "react";
+
+// questions: [{id, question, choice_a..d, correct, note}]
+// onFinish(score, total) が呼ばれたら親側で結果を保存する
+export default function Quiz({ questions, onFinish }) {
+  const [index, setIndex] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [answered, setAnswered] = useState(false);
+  const [score, setScore] = useState(0);
+
+  const q = questions[index];
+  const choices = [
+    ["A", q.choice_a],
+    ["B", q.choice_b],
+    ["C", q.choice_c],
+    ["D", q.choice_d],
+  ].filter(([, text]) => text);
+
+  function pick(letter) {
+    if (answered) return;
+    setSelected(letter);
+    setAnswered(true);
+    if (letter === q.correct) setScore((s) => s + 1);
+  }
+
+  function next() {
+    if (index + 1 < questions.length) {
+      setIndex(index + 1);
+      setSelected(null);
+      setAnswered(false);
+    } else {
+      onFinish(score, questions.length);
+    }
+  }
+
+  return (
+    <div>
+      <div className="progress-bar">
+        <div style={{ width: `${((index + 1) / questions.length) * 100}%` }} />
+      </div>
+      <p className="muted">
+        問題 {index + 1} / {questions.length}
+      </p>
+      <div className="card">
+        <p style={{ fontSize: 18, fontWeight: "bold" }}>{q.question}</p>
+        {choices.map(([letter, text]) => {
+          let cls = "choice";
+          if (answered) {
+            if (letter === q.correct) cls += " correct";
+            else if (letter === selected) cls += " incorrect";
+          } else if (letter === selected) {
+            cls += " selected";
+          }
+          return (
+            <button key={letter} className={cls} onClick={() => pick(letter)}>
+              {letter}. {text}
+            </button>
+          );
+        })}
+        {answered && (
+          <div style={{ marginTop: 12 }}>
+            <p>
+              {selected === q.correct ? "✅ 正解！" : "❌ 不正解"}
+              {q.note ? `　（${q.note}）` : ""}
+            </p>
+            <button className="btn" onClick={next}>
+              {index + 1 < questions.length ? "次の問題へ" : "結果を見る"}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
