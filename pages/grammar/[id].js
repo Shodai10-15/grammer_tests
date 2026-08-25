@@ -302,41 +302,169 @@ export default function GrammarPage() {
   );
 }
 
-function Step3Form({ onSubmit }) {
-  const [text, setText] = useState("");
-  const [noted, setNoted] = useState(false);
+const STEP3_CONFIG = {
+  G1: {
+    title: "わたしの説明書",
+    themeHint: "好きなこと・得意なことを1つ決めよう（部活、趣味、ペット、ゲームなど）",
+    frames: [
+      "I know how to ___.",
+      "I don't know what to ___.",
+      "Do you know where to ___?",
+      "I wonder who to ___.",
+      "Please remember when to ___.",
+    ],
+    guiding: [
+      "なぜ好き・得意なの？",
+      "いつから始めた？",
+      "どんなエピソードがある？",
+      "これからどうしたい？",
+    ],
+    example:
+      "I like basketball. I know how to shoot well. I don't know what to do when I miss. I practice every day.",
+  },
+  G2: {
+    title: "先輩からのアドバイスカード",
+    themeHint: "後輩（1年生など）にアドバイスするつもりでテーマを1つ決めよう",
+    frames: [
+      "I'll show you how to ___.",
+      "I'll tell you what to ___ when ___.",
+      "Can you teach me where to ___?",
+      "My friend showed me who to ___.",
+      "I'll teach you when to ___.",
+    ],
+    guiding: [
+      "何が得意で教えたいの？",
+      "いつ困る場面が多い？",
+      "自分も最初は苦労した？",
+      "どんな気持ちで伝えたい？",
+    ],
+    example:
+      "I'm good at cooking. I'll show you how to cut vegetables. I'll tell you what to do when the pan is hot. Cooking is fun for me.",
+  },
+};
+
+const COPILOT_PROMPT = `あなたは中学2年生の英語学習をサポートするアシスタントです。
+以下の英文について、文法的な間違いがあれば指摘し、より自然な表現があれば提案してください。
+ただし、書き直した文章は私に伝えるだけにして、あなたが直接答えを完成させないでください。
+英文：（ここに自分の文章を貼る）`;
+
+function Step3Form({ grammar, onSubmit }) {
+  const config = STEP3_CONFIG[grammar];
+  const [theme, setTheme] = useState("");
+  const [draft, setDraft] = useState("");
+  const [usedCopilot, setUsedCopilot] = useState(false);
+  const [revised, setRevised] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const canSubmit = theme.trim() && draft.trim() && (!usedCopilot || revised.trim());
 
   return (
     <div className="card">
-      <p style={{ fontWeight: "bold" }}>
-        来年学校に来るALTの先生に教えてあげたいことを、1文で書こう。
-      </p>
-      <p className="muted">
-        例：This shows you how to use the vending machine. / I'm sure this is
-        useful for people who are new to Japan.
-      </p>
+      <p style={{ fontWeight: "bold", fontSize: 18 }}>{config.title}</p>
+      <p className="muted">{config.themeHint}</p>
+
+      <label>テーマ</label>
       <input
         type="text"
-        placeholder="ここに英文を書こう"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
+        placeholder="例：バスケットボール、料理、飼っているねこ"
+        value={theme}
+        onChange={(e) => setTheme(e.target.value)}
       />
-      <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+
+      <div
+        style={{
+          background: "var(--bg-accent, #eaf4f2)",
+          borderRadius: 10,
+          padding: "10px 14px",
+          marginBottom: 12,
+        }}
+      >
+        <p style={{ fontWeight: "bold", margin: "0 0 6px" }}>使える型（2つ以上使おう）</p>
+        {config.frames.map((f, i) => (
+          <p key={i} style={{ margin: "2px 0", fontFamily: "monospace" }}>
+            ・{f}
+          </p>
+        ))}
+      </div>
+
+      <div
+        style={{
+          background: "#fdf1dc",
+          borderRadius: 10,
+          padding: "10px 14px",
+          marginBottom: 12,
+        }}
+      >
+        <p style={{ fontWeight: "bold", margin: "0 0 6px" }}>
+          💡 何を書けばいいか迷ったら（ヒント・書かなくてもOK）
+        </p>
+        {config.guiding.map((g, i) => (
+          <p key={i} style={{ margin: "2px 0" }}>
+            ・{g}
+          </p>
+        ))}
+      </div>
+
+      <p className="muted">例（3〜4文）：{config.example}</p>
+
+      <label>下書き（3〜4文）</label>
+      <textarea
+        rows={4}
+        style={{ width: "100%", padding: 12, fontSize: 15, borderRadius: 8, border: "1px solid #d3dde0", marginBottom: 12 }}
+        placeholder="ここに自分の文章を書こう"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+      />
+
+      <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
         <input
           type="checkbox"
-          checked={noted}
-          onChange={(e) => setNoted(e.target.checked)}
+          checked={usedCopilot}
+          onChange={(e) => setUsedCopilot(e.target.checked)}
           style={{ width: 20, height: 20 }}
         />
-        発表ノートに書き写した／声に出して読んだ
+        Copilotに相談して改善した
       </label>
+
+      {usedCopilot && (
+        <>
+          <div
+            style={{
+              background: "#f4f7f6",
+              borderRadius: 10,
+              padding: "10px 14px",
+              marginBottom: 8,
+              fontSize: 13,
+              whiteSpace: "pre-wrap",
+              fontFamily: "monospace",
+            }}
+          >
+            {COPILOT_PROMPT}
+          </div>
+          <label>改善後の文章</label>
+          <textarea
+            rows={4}
+            style={{ width: "100%", padding: 12, fontSize: 15, borderRadius: 8, border: "1px solid #d3dde0", marginBottom: 12 }}
+            placeholder="Copilotに相談したあとの文章を貼ろう"
+            value={revised}
+            onChange={(e) => setRevised(e.target.value)}
+          />
+        </>
+      )}
+
       <button
         className="btn"
-        disabled={!text.trim() || !noted || submitting}
+        disabled={!canSubmit || submitting}
         onClick={async () => {
           setSubmitting(true);
-          await onSubmit(text.trim());
+          const parts = [
+            `[テーマ] ${theme.trim()}`,
+            `[下書き]\n${draft.trim()}`,
+          ];
+          if (usedCopilot && revised.trim()) {
+            parts.push(`[Copilot改善後]\n${revised.trim()}`);
+          }
+          await onSubmit(parts.join("\n\n"));
           setSubmitting(false);
         }}
       >
