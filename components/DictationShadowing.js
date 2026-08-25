@@ -3,11 +3,13 @@ import AudioPlayer from "./AudioPlayer";
 import { isSpeechRecognitionSupported } from "../lib/speechRecognition";
 import { wordAccuracy, exactMatch, wordMatchDetail } from "../lib/textSimilarity";
 
-const PASS_THRESHOLD = 80;
+const DICTATION_PASS = 80;
+const SHADOW_PASS = 90; // 1語程度の誤りまでは合格にする
 
 // questions: [{id, question, note}]  question = 正解の英文、note = 日本語訳（ヒント用）
 // フェーズ: dictation（聞いて書き取る・一致率80%以上で次へ）
-//         → shadowing（英文非表示・再生と同時に録音、再生終了で自動停止、単語ごとに正誤表示）
+//         → shadowing（英文非表示・再生と同時に録音、再生終了で自動停止。
+//            不正解時は英文もヒントも出さず「何語間違っているか」だけを表示する）
 export default function DictationShadowing({ questions, onFinish }) {
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState("dictation");
@@ -15,6 +17,7 @@ export default function DictationShadowing({ questions, onFinish }) {
   const [showHint, setShowHint] = useState(false);
   const [dictationResult, setDictationResult] = useState(null);
   const [listening, setListening] = useState(false);
+  const [practicing, setPracticing] = useState(false);
   const [shadowResult, setShadowResult] = useState(null);
   const [error, setError] = useState("");
   const recognizerRef = useRef(null);
@@ -30,7 +33,7 @@ export default function DictationShadowing({ questions, onFinish }) {
     setError("");
     const correct = exactMatch(q.question, input);
     const accuracy = wordAccuracy(q.question, input);
-    setDictationResult({ correct, accuracy, passed: correct || accuracy >= PASS_THRESHOLD });
+    setDictationResult({ correct, accuracy, passed: correct || accuracy >= DICTATION_PASS });
   }
 
   function goToShadowing() {
@@ -43,6 +46,19 @@ export default function DictationShadowing({ questions, onFinish }) {
   function retryDictation() {
     setDictationResult(null);
     setInput("");
+  }
+
+  // 録音を伴わない「聞くだけ」の練習再生
+  function practiceListen() {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    setPracticing(true);
+    window.speechSynthesis.cancel();
+    const utter = new window.SpeechSynthesisUtterance(q.question);
+    utter.lang = "en-US";
+    utter.rate = 0.75;
+    utter.onend = () => setPracticing(false);
+    utter.onerror = () => setPracticing(false);
+    window.speechSynthesis.speak(utter);
   }
 
   function startShadowing() {
@@ -86,7 +102,6 @@ export default function DictationShadowing({ questions, onFinish }) {
     utter.lang = "en-US";
     utter.rate = 0.75;
     utter.onend = () => {
-      // 発話の余韻を少し待ってから止める
       setTimeout(() => {
         if (recognizerRef.current) recognizerRef.current.stop();
       }, 900);
@@ -120,7 +135,8 @@ export default function DictationShadowing({ questions, onFinish }) {
     }
   }
 
-  const shadowPassed = shadowResult && shadowResult.ratio >= PASS_THRESHOLD;
+  const shadowPassed = shadowResult && shadowResult.ratio >= SHADOW_PASS;
+  const wrongCount = shadowResult ? shadowResult.total - shadowResult.matchedCount : 0;
 
   return (
     <div>
@@ -199,39 +215,41 @@ export default function DictationShadowing({ questions, onFinish }) {
               このブラウザは音声認識に対応していません（Chrome、またはEdgeでお試しください）
             </p>
           )}
-          <button
-            className="btn"
-            onClick={startShadowing}
-            disabled={listening || !supported}
-          >
-            {listening ? "🔊🎤 再生・録音中..." : "🔊🎤 再生しながら話す"}
-          </button>
+          <div className="btn-row">
+            <button
+              className="btn"
+              onClick={startShadowing}
+              disabled={listening || practicing || !supported}
+            >
+              {listening ? "🔊🎤 再生・録音中..." : "🔊🎤 再生しながら話す"}
+            </button>
+            <button
+              className="btn secondary"
+              onClick={practiceListen}
+              disabled={listening || practicing}
+            >
+              {practicing ? "🔈 再生中..." : "🔈 もう一度聞く（練習）"}
+            </button>
+          </div>
           {error && <p style={{ color: "var(--danger, #c0392b)", fontSize: 13 }}>{error}</p>}
           {shadowResult && (
             <div style={{ marginTop: 12 }}>
-              <p style={{ fontSize: 16, lineHeight: 2 }}>
-                {shadowResult.detail.map((d, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      display: "inline-block",
-                      margin: "0 4px 4px 0",
-                      padding: "2px 8px",
-                      borderRadius: 6,
-                      background: d.matched ? "#dff3e6" : "#fbe4e1",
-                      color: d.matched ? "#2e8b57" : "#c0392b",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {d.word}
+              {shadowPassed ? (
+                <>
+                  <p style={{ fontWeight: "bold", color: "#2e8b57" }}>
+                    ✅ 合格！（一致率 {shadowResult.ratio}%）
+                  </p>
+                  <p className="muted">正解の文：{q.question}</p>
+                </>
+              ) : (
+                <p style={{ fontWeight: "bold", color: "#c0392b" }}>
+                  ❌ {shadowResult.total}語中 {wrongCount}語 違います（一致率 {shadowResult.ratio}%）
+                  <br />
+                  <span style={{ fontWeight: "normal" }}>
+                    「もう一度聞く」で確認してから、もう一度話してみよう
                   </span>
-                ))}
-              </p>
-              <p className="muted">認識結果: {shadowResult.transcript || "（聞き取れませんでした）"}</p>
-              <p>
-                一致率 {shadowResult.ratio}%　
-                {shadowPassed ? "✅ 合格！" : "もう少し！赤い単語をはっきり発音してもう一度話してみよう"}
-              </p>
+                </p>
+              )}
               <div className="btn-row">
                 {!shadowPassed && (
                   <button className="btn secondary" onClick={startShadowing}>

@@ -96,6 +96,13 @@ export default function TypeThenSpeak({ questions, onFinish }) {
     listenOnce({
       onResult: (transcript) => {
         const result = wordMatchDetail(q.english, transcript);
+        const passed = result.ratio >= PASS_THRESHOLD;
+        if (passed && timerRef.current) {
+          // 正解したのでタイマーを止める（時間切れによる失格を防ぐ）
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        if (passed) setTimedOut(false);
         setSpeakResult({ ...result, transcript });
       },
       onError: (err) => {
