@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { supabase } from "../lib/supabase";
 import { saveSession, getSession } from "../lib/session";
 
 export default function Login() {
@@ -18,12 +17,13 @@ export default function Login() {
       return;
     }
     async function loadStudents() {
-      if (!supabase) return;
-      const { data } = await supabase
-        .from("students")
-        .select("seat_number, name")
-        .order("seat_number");
-      setStudents(data || []);
+      try {
+        const res = await fetch("/api/roster");
+        const data = await res.json();
+        setStudents(data.students || []);
+      } catch {
+        setStudents([]);
+      }
     }
     loadStudents();
   }, [router]);
@@ -35,21 +35,29 @@ export default function Login() {
       setError("出席番号を選んでください");
       return;
     }
-    const classPassword = process.env.NEXT_PUBLIC_CLASS_PASSWORD;
-    if (!classPassword) {
-      setError(
-        "合言葉が設定されていません（.env.localのNEXT_PUBLIC_CLASS_PASSWORDを確認してください）"
-      );
-      return;
-    }
-    if (password !== classPassword) {
-      setError("合言葉が違います");
+    if (!password) {
+      setError("パスワードを入力してください");
       return;
     }
     setLoading(true);
-    const student = students.find((s) => s.seat_number === seatNumber);
-    saveSession(seatNumber, student ? student.name : seatNumber);
-    router.push("/select");
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seatNumber, password }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error || "ログインに失敗しました");
+        setLoading(false);
+        return;
+      }
+      saveSession(seatNumber, data.name);
+      router.push("/select");
+    } catch (err) {
+      setError("通信エラーが発生しました");
+      setLoading(false);
+    }
   }
 
   return (
@@ -73,26 +81,21 @@ export default function Login() {
             ))}
           </select>
 
-          <label htmlFor="pw">合言葉</label>
+          <label htmlFor="pw">パスワード</label>
           <input
             id="pw"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="先生に聞いた合言葉を入力"
+            placeholder="先生に配布されたパスワードを入力"
           />
 
           {error && <p style={{ color: "#c0392b" }}>{error}</p>}
 
           <button className="btn" type="submit" disabled={loading}>
-            ログイン
+            {loading ? "確認中..." : "ログイン"}
           </button>
         </form>
-        {!supabase && (
-          <p className="muted" style={{ marginTop: 16 }}>
-            ※ Supabaseが未接続です。README.mdの手順に沿って環境変数を設定してください。
-          </p>
-        )}
       </div>
     </div>
   );

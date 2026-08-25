@@ -25,15 +25,15 @@ export default function Teacher() {
   async function loadAll() {
     if (!supabase) return;
     setLoading(true);
-    const [{ data: st }, { data: pr }, { data: hp }] = await Promise.all([
-      supabase.from("students").select("seat_number, name").order("seat_number"),
+    const [rosterRes, { data: pr }, { data: hp }] = await Promise.all([
+      fetch("/api/roster").then((r) => r.json()),
       supabase.from("progress").select("*"),
       supabase
         .from("help_requests")
         .select("*")
         .order("created_at", { ascending: false }),
     ]);
-    setStudents(st || []);
+    setStudents(rosterRes.students || []);
     setProgress(pr || []);
     setHelps(hp || []);
     setLoading(false);
