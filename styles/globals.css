@@ -1,43 +1,49 @@
-@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Space+Grotesk:wght@600;700&display=swap');
 
 :root {
-  /* ===== Wayfinding / signage system ===== */
-  --ink: #14213d;          /* 案内板の地色（濃紺） */
-  --ink-soft: #253458;
-  --paper: #f6f6f1;        /* 用紙のような背景 */
+  /* ===== モダン＆ポップ + UD準拠 トークン ===== */
+  --paper: #f8f9fc;
   --panel: #ffffff;
-  --signal: #ffb400;       /* サインイエロー（主アクセント） */
-  --signal-ink: #402c00;   /* シグナル上の文字色 */
-  --route: #0f6e6b;        /* 案内線（セカンダリアクセント） */
-  --ok: #1e8e5a;
-  --ok-bg: #e2f3ea;
-  --warn: #b06a00;
-  --warn-bg: #fdf1d8;
-  --danger: #c23b3b;
-  --danger-bg: #fbe9e7;
-  --line: #dcdcd2;
-  --text: #14213d;
-  --text-muted: #5b6478;
 
-  /* aliases so existing component code (written against earlier var names) */
-  /* resolves to the new signage palette automatically */
-  --text-primary: var(--ink);
+  /* WCAG AA準拠の高コントラストテキスト */
+  --text: #0f172a;         /* 濃いグレー（本文） */
+  --text-muted: #475569;   /* 補足テキストでも十分なコントラストを確保 */
+
+  /* CUD配慮のアクセント（識別しやすい高彩度カラー） */
+  --blue: #2563eb;
+  --blue-bg: #dbeafe;
+  --purple: #7c3aed;
+  --purple-bg: #ede9fe;
+  --orange: #ea580c;
+  --orange-bg: #ffedd5;
+  --green: #15803d;
+  --green-bg: #dcfce7;
+  --red: #b91c1c;
+  --red-bg: #fee2e2;
+
+  --ink: #0f172a;
+  --line: #cbd5e1;
+  --focus: #4f46e5;
+
+  --ok: var(--green);
+  --ok-bg: var(--green-bg);
+  --warn: #b45309;
+  --warn-bg: #fef3c7;
+  --danger: var(--red);
+  --danger-bg: var(--red-bg);
+
+  --text-primary: var(--text);
   --text-secondary: var(--text-muted);
-  --bg-accent: #fff3d6;
+  --bg-accent: var(--blue-bg);
   --muted: var(--text-muted);
-  --orange: var(--signal);
 
-  --font-jp: "Zen Kaku Gothic New", "Hiragino Sans", sans-serif;
-  --font-display: "Space Grotesk", "Zen Kaku Gothic New", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-jp: "Zen Maru Gothic", "Hiragino Sans", sans-serif;
+  --font-display: "Space Grotesk", "Zen Maru Gothic", sans-serif;
+  --font-mono: "Space Grotesk", ui-monospace, monospace;
 }
 
 * {
   box-sizing: border-box;
-}
-
-html {
-  background: var(--ink);
 }
 
 body {
@@ -45,126 +51,100 @@ body {
   font-family: var(--font-jp);
   background: var(--paper);
   color: var(--text);
+  font-size: 16px;
+  line-height: 1.75;
   -webkit-font-smoothing: antialiased;
-}
-
-a {
-  color: var(--route);
 }
 
 button, input, select, textarea {
   font-family: var(--font-jp);
 }
 
+/* 太く、明確なフォーカスリング（キーボード操作対応） */
 :focus-visible {
-  outline: 3px solid var(--signal);
+  outline: 4px solid var(--focus);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 .page {
   max-width: 720px;
   margin: 0 auto;
-  padding: 0 0 72px;
+  padding: 20px 16px 80px;
   min-height: 100vh;
 }
 
-/* ---------- Header: signage board strip ---------- */
+/* ---------- Header ---------- */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--ink);
-  padding: 20px 20px 18px;
-  margin: 0 0 24px;
-  border-bottom: 5px solid var(--signal);
-  position: relative;
+  margin-bottom: 22px;
+  gap: 12px;
 }
 
 .header h1 {
   font-family: var(--font-display);
-  font-size: 21px;
+  font-size: 22px;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   margin: 0;
-  color: #fff;
-}
-
-.header .btn.secondary {
-  background: transparent;
-  color: var(--signal);
-  border: 1.5px solid rgba(255, 180, 0, 0.5);
-}
-.header .btn.secondary:hover {
-  background: rgba(255, 180, 0, 0.12);
-}
-
-/* body padding since header is now edge-to-edge */
-.page > *:not(.header) {
-  padding-left: 20px;
-  padding-right: 20px;
-}
-.page > .header {
-  width: 100vw;
-  position: relative;
-  left: 50%;
-  margin-left: -50vw;
-  padding-left: max(20px, calc(50vw - 340px));
-  padding-right: max(20px, calc(50vw - 340px));
+  color: var(--text);
 }
 
 /* ---------- Cards ---------- */
 .card {
   background: var(--panel);
-  border: 1px solid var(--line);
-  border-left: 5px solid var(--ink);
-  border-radius: 4px;
-  padding: 22px;
+  border: 1.5px solid var(--line);
+  border-radius: 24px;
+  padding: 24px;
   margin-bottom: 18px;
-  box-shadow: 0 1px 0 rgba(20, 33, 61, 0.03);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
 }
 
-/* ---------- Buttons ---------- */
+/* ---------- Buttons: 大きなタッチターゲット ---------- */
 .btn {
   display: inline-block;
-  background: var(--ink);
+  background: var(--blue);
   color: #fff;
-  border: none;
+  border: 2px solid var(--blue);
   border-radius: 999px;
-  padding: 13px 26px;
+  padding: 15px 28px;
+  min-height: 52px;
   font-size: 16px;
   font-weight: 700;
   font-family: var(--font-jp);
   cursor: pointer;
   text-align: center;
-  transition: transform 0.12s ease, background 0.15s ease;
+  transition: transform 0.12s ease, box-shadow 0.15s ease;
 }
 .btn:hover:not(:disabled) {
-  background: var(--ink-soft);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
   transform: translateY(-1px);
 }
 .btn:active:not(:disabled) {
   transform: translateY(0);
 }
-
 .btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .btn.secondary {
   background: #fff;
-  color: var(--ink);
-  border: 1.5px solid var(--line);
+  color: var(--text);
+  border: 2px solid var(--line);
 }
 .btn.secondary:hover:not(:disabled) {
-  border-color: var(--ink);
-  background: var(--paper);
+  border-color: var(--blue);
+  box-shadow: none;
 }
 
 .btn.danger {
-  background: var(--danger);
+  background: var(--red);
+  border-color: var(--red);
 }
 
 .btn-row {
@@ -173,67 +153,65 @@ button, input, select, textarea {
   flex-wrap: wrap;
 }
 
-/* Primary "signal" CTA styling for the actual answer-check buttons */
-.card > .btn:first-of-type,
-.card .btn:not(.secondary) {
-  background: var(--ink);
-}
-
 /* ---------- Inputs ---------- */
 input[type="text"],
 input[type="password"],
 select,
 textarea {
   width: 100%;
-  padding: 13px 14px;
+  padding: 14px 16px;
   font-size: 16px;
-  border: 1.5px solid var(--line);
-  border-radius: 4px;
-  margin-bottom: 12px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  margin-bottom: 14px;
   background: #fff;
   color: var(--text);
   font-family: var(--font-jp);
+  min-height: 52px;
 }
 input[type="text"]:focus,
 input[type="password"]:focus,
 select:focus,
 textarea:focus {
-  border-color: var(--ink);
+  border-color: var(--blue);
 }
 
 label {
   display: block;
-  font-size: 12.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 14px;
   color: var(--text-muted);
   margin-bottom: 6px;
   font-weight: 700;
-  font-family: var(--font-display);
 }
 
-/* ---------- Grid of tiles (signage panels) ---------- */
+/* ---------- Grid of tiles ---------- */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 .tile {
   background: var(--panel);
-  border: 1px solid var(--line);
-  border-top: 6px solid var(--ink);
-  border-radius: 4px;
-  padding: 20px 14px;
+  border: 2px solid var(--line);
+  border-left: 8px solid var(--blue);
+  border-radius: 20px;
+  padding: 22px 16px;
+  min-height: 96px;
   text-align: center;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
+
+/* カテゴリごとに色を変える（アイコン・テキストと合わせて色以外でも判別できる太い境界線） */
+.grid .tile:nth-child(3n+1) { border-left-color: var(--blue); }
+.grid .tile:nth-child(3n+2) { border-left-color: var(--purple); }
+.grid .tile:nth-child(3n+3) { border-left-color: var(--orange); }
 
 .tile:hover {
   transform: translateY(-3px);
-  border-top-color: var(--signal);
-  box-shadow: 0 8px 16px rgba(20, 33, 61, 0.1);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  border-color: var(--ink);
 }
 
 .tile.locked {
@@ -242,97 +220,109 @@ label {
   transform: none !important;
 }
 .tile.locked:hover {
-  border-top-color: var(--ink);
   box-shadow: none;
+  border-color: var(--line);
 }
 
 .tile .big {
   font-family: var(--font-display);
   font-size: 30px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text);
 }
 
-/* ---------- Badges: status labels like platform indicators ---------- */
+/* ---------- Badges: 色だけに頼らずアイコン(記号)＋テキストで判別 ---------- */
 .badge {
-  display: inline-block;
-  font-size: 11.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
   font-weight: 700;
-  font-family: var(--font-mono);
-  letter-spacing: 0.04em;
-  padding: 3px 12px;
+  padding: 5px 14px;
   border-radius: 999px;
-  margin-top: 8px;
-  text-transform: uppercase;
+  margin-top: 10px;
+  border: 1.5px solid transparent;
 }
 
 .badge.passed {
   background: var(--ok-bg);
   color: var(--ok);
+  border-color: var(--ok);
 }
+.badge.passed::before { content: "✓"; }
+
 .badge.in_progress {
   background: var(--warn-bg);
   color: var(--warn);
+  border-color: var(--warn);
 }
+.badge.in_progress::before { content: "●"; font-size: 9px; }
+
 .badge.none {
-  background: #eceeee;
+  background: #f1f5f9;
   color: var(--text-muted);
+  border-color: var(--line);
 }
+.badge.none::before { content: "○"; font-size: 10px; }
 
 /* ---------- Choice buttons ---------- */
 .choice {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 15px 16px;
-  margin-bottom: 10px;
-  border: 1.5px solid var(--line);
-  border-left: 4px solid var(--line);
-  border-radius: 4px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
   background: #fff;
   font-size: 16px;
   font-family: var(--font-jp);
   color: var(--text);
   cursor: pointer;
-  transition: border-color 0.12s ease, background 0.12s ease;
+  min-height: 52px;
+  transition: border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
 }
 .choice:hover {
-  border-left-color: var(--ink);
-  background: var(--paper);
+  border-color: var(--blue);
+  background: var(--blue-bg);
 }
 
 .choice.selected {
-  border-left-color: var(--ink);
-  border-color: var(--ink);
-  background: var(--paper);
+  border-color: var(--blue);
+  border-width: 3px;
+  background: var(--blue-bg);
+  font-weight: 700;
 }
 
 .choice.correct {
-  border-left-color: var(--ok);
   border-color: var(--ok);
+  border-width: 3px;
   background: var(--ok-bg);
+  font-weight: 700;
 }
+.choice.correct::after { content: "  ✓ 正解"; color: var(--ok); }
 
 .choice.incorrect {
-  border-left-color: var(--danger);
   border-color: var(--danger);
+  border-width: 3px;
   background: var(--danger-bg);
 }
+.choice.incorrect::after { content: "  ✕"; color: var(--danger); }
 
-/* ---------- Progress: split-flap departure-board style ---------- */
+/* ---------- Progress bar ---------- */
 .progress-bar {
-  height: 10px;
-  background: var(--ink);
+  height: 12px;
+  background: #e2e8f0;
   border-radius: 999px;
   overflow: hidden;
-  margin-bottom: 14px;
-  border: 1px solid var(--ink);
+  margin-bottom: 16px;
 }
 
 .progress-bar > div {
   height: 100%;
-  background: var(--signal);
-  transition: width 0.2s ease;
+  background: var(--blue);
+  border-radius: 999px;
+  transition: width 0.25s ease;
 }
 
 /* ---------- Floating help button ---------- */
@@ -340,15 +330,16 @@ label {
   position: fixed;
   right: 20px;
   bottom: 20px;
-  background: var(--signal);
-  color: var(--signal-ink);
+  background: var(--orange);
+  color: #fff;
   border: none;
   border-radius: 999px;
-  padding: 15px 22px;
+  padding: 16px 24px;
+  min-height: 52px;
   font-weight: 700;
   font-size: 15px;
   font-family: var(--font-jp);
-  box-shadow: 0 6px 18px rgba(20, 33, 61, 0.3);
+  box-shadow: 0 6px 18px rgba(234, 88, 12, 0.35);
   cursor: pointer;
   z-index: 40;
 }
@@ -357,14 +348,13 @@ label {
 table.dash {
   border-collapse: collapse;
   width: 100%;
-  font-size: 13px;
-  font-family: var(--font-mono);
+  font-size: 13.5px;
 }
 
 table.dash th,
 table.dash td {
-  border: 1px solid var(--line);
-  padding: 8px 10px;
+  border: 1.5px solid var(--line);
+  padding: 9px 10px;
   text-align: center;
 }
 
@@ -372,19 +362,14 @@ table.dash th {
   background: var(--ink);
   color: #fff;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 table.dash tr:nth-child(even) td {
-  background: #fbfbf8;
+  background: #f8fafc;
 }
 
-/* ---------- Digital-counter treatment for step/progress text ---------- */
 .muted {
   color: var(--text-muted);
-  font-size: 13.5px;
-  font-family: var(--font-mono);
-  letter-spacing: 0.02em;
+  font-size: 14px;
 }
