@@ -91,7 +91,7 @@ export default function Teacher() {
       </div>
 
       <div className="card">
-        <p style={{ fontWeight: "bold" }}>進捗マトリクス</p>
+        <p className="section-title">進捗マトリクス</p>
         <table className="dash">
           <thead>
             <tr>
@@ -124,7 +124,7 @@ export default function Teacher() {
       </div>
 
       <div className="card">
-        <p style={{ fontWeight: "bold" }}>直近のヘルプ要請</p>
+        <p className="section-title">直近のヘルプ要請</p>
         {helps.slice(0, 15).map((h) => (
           <p key={h.id} className="muted">
             {new Date(h.created_at).toLocaleTimeString("ja-JP")}　

@@ -152,7 +152,7 @@ export default function GrammarPage() {
       {!mode && (
         <>
           <div className="card">
-            <p style={{ fontWeight: "bold", marginBottom: 4 }}>Step1　理解</p>
+            <p className="section-title">Step1　理解</p>
             <p className="muted">好きな技能を1つ以上選んで取り組もう</p>
             <div className="grid">
               {STEP1_SKILLS.map((s) => (
@@ -172,7 +172,7 @@ export default function GrammarPage() {
           </div>
 
           <div className="card">
-            <p style={{ fontWeight: "bold", marginBottom: 4 }}>
+            <p className="section-title">
               Step2　暗記・習熟（合格ライン）
             </p>
             <p className="muted">
@@ -196,7 +196,7 @@ export default function GrammarPage() {
           </div>
 
           <div className="card">
-            <p style={{ fontWeight: "bold", marginBottom: 4 }}>
+            <p className="section-title">
               Step3　応用（ALTの先生に伝えよう）
             </p>
             <p className="muted">
@@ -241,7 +241,7 @@ export default function GrammarPage() {
 
       {mode && mode.step === 3 && grammar === "G3" && (
         <div className="card">
-          <p style={{ fontWeight: "bold" }}>準備中</p>
+          <p className="section-title">準備中</p>
           <p className="muted">
             この単元末の課題は、先生とのやり取りを通して取り組む形に変更予定です。しばらくお待ちください。
           </p>
@@ -360,7 +360,7 @@ function Step3Form({ grammar, onSubmit }) {
 
   return (
     <div className="card">
-      <p style={{ fontWeight: "bold", fontSize: 18 }}>{config.title}</p>
+      <p className="section-title" style={{ fontSize: 22 }}>{config.title}</p>
       <p className="muted">{config.themeHint}</p>
 
       <label>テーマ</label>
@@ -379,7 +379,7 @@ function Step3Form({ grammar, onSubmit }) {
           marginBottom: 12,
         }}
       >
-        <p style={{ fontWeight: "bold", margin: "0 0 6px" }}>使える型（2つ以上使おう）</p>
+        <p className="section-title" style={{ fontSize: 16 }}>使える型（2つ以上使おう）</p>
         {config.frames.map((f, i) => (
           <p key={i} style={{ margin: "2px 0", fontFamily: "monospace" }}>
             ・{f}
@@ -395,7 +395,7 @@ function Step3Form({ grammar, onSubmit }) {
           marginBottom: 12,
         }}
       >
-        <p style={{ fontWeight: "bold", margin: "0 0 6px" }}>
+        <p className="section-title" style={{ fontSize: 16 }}>
           💡 何を書けばいいか迷ったら（ヒント・書かなくてもOK）
         </p>
         {config.guiding.map((g, i) => (

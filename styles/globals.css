@@ -227,9 +227,21 @@ label {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.grid .tile:nth-child(3n+1) { border-top-color: var(--blue); }
-.grid .tile:nth-child(3n+2) { border-top-color: var(--purple); }
-.grid .tile:nth-child(3n+3) { border-top-color: var(--orange); }
+.grid .tile:nth-child(3n+1) { border-top-color: var(--blue); background: var(--blue-bg); }
+.grid .tile:nth-child(3n+2) { border-top-color: var(--purple); background: var(--purple-bg); }
+.grid .tile:nth-child(3n+3) { border-top-color: var(--orange); background: var(--orange-bg); }
+
+.grid .tile:nth-child(3n+1) > div:first-child { color: var(--blue-dark); }
+.grid .tile:nth-child(3n+2) > div:first-child { color: var(--purple-dark); }
+.grid .tile:nth-child(3n+3) > div:first-child { color: var(--orange-dark); }
+
+.tile > div:first-child {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
 
 .grid .tile:nth-child(3n+1):hover { box-shadow: 0 16px 32px rgba(79, 70, 229, 0.28); }
 .grid .tile:nth-child(3n+2):hover { box-shadow: 0 16px 32px rgba(124, 58, 237, 0.28); }
@@ -405,4 +417,14 @@ table.dash tr:nth-child(even) td {
   color: var(--text-muted);
   font-size: 14px;
   font-weight: 500;
+}
+
+/* ---------- Section titles: レタリング系の太字見出し ---------- */
+.section-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 0 0 6px;
 }
