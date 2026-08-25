@@ -239,7 +239,19 @@ export default function GrammarPage() {
         <TypeThenSpeak questions={typeSpeakQuestions} onFinish={handleQuizFinish} />
       )}
 
-      {mode && mode.step === 3 && (
+      {mode && mode.step === 3 && grammar === "G3" && (
+        <div className="card">
+          <p style={{ fontWeight: "bold" }}>準備中</p>
+          <p className="muted">
+            この単元末の課題は、先生とのやり取りを通して取り組む形に変更予定です。しばらくお待ちください。
+          </p>
+          <button className="btn secondary" onClick={backToMenu}>
+            メニューに戻る
+          </button>
+        </div>
+      )}
+
+      {mode && mode.step === 3 && grammar !== "G3" && (
         <Step3Form
           grammar={grammar}
           onSubmit={async (text) => {

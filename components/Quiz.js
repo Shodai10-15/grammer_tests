@@ -1,5 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import AudioPlayer from "./AudioPlayer";
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 // questions: [{id, question, choice_a..d, correct, note}]
 // audioMode: true の場合（Listening用）、英文は隠して音声のみで出題し、
@@ -13,12 +22,18 @@ export default function Quiz({ questions, onFinish, audioMode, instructionText }
   const [score, setScore] = useState(0);
 
   const q = questions[index];
-  const choices = [
-    ["A", q.choice_a],
-    ["B", q.choice_b],
-    ["C", q.choice_c],
-    ["D", q.choice_d],
-  ].filter(([, text]) => text);
+
+  // 問題ごとに選択肢の並び順をシャッフルする（正解が毎回同じ位置にならないように）
+  const choices = useMemo(() => {
+    const raw = [
+      ["A", q.choice_a],
+      ["B", q.choice_b],
+      ["C", q.choice_c],
+      ["D", q.choice_d],
+    ].filter(([, text]) => text);
+    return shuffle(raw);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q.id]);
 
   function pick(letter) {
     if (answered) return;
@@ -80,7 +95,7 @@ export default function Quiz({ questions, onFinish, audioMode, instructionText }
           }
           return (
             <button key={letter} className={cls} onClick={() => pick(letter)}>
-              {letter}. {text}
+              {text}
             </button>
           );
         })}
