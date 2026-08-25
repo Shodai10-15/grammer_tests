@@ -65,6 +65,13 @@ export default function Login() {
       <div className="header">
         <h1>Unit 5　確認クイズ</h1>
       </div>
+      <div style={{ textAlign: "center", marginBottom: 8 }}>
+        <img
+          src="/mascot/wave.png"
+          alt=""
+          style={{ width: 110, height: "auto" }}
+        />
+      </div>
       <div className="card">
         <form onSubmit={handleLogin}>
           <label htmlFor="seat">出席番号</label>

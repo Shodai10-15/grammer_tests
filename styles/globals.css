@@ -99,10 +99,10 @@ button, input, select, textarea {
 }
 
 .header h1 {
-  font-family: var(--font-display);
+  font-family: var(--font-jp);
   font-size: 27px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 900;
+  letter-spacing: 0.01em;
   margin: 0;
   color: var(--text);
 }
@@ -236,11 +236,15 @@ label {
 .grid .tile:nth-child(3n+3) > div:first-child { color: var(--orange-dark); }
 
 .tile > div:first-child {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 19px;
-  letter-spacing: -0.01em;
+  font-family: var(--font-jp);
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.01em;
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .grid .tile:nth-child(3n+1):hover { box-shadow: 0 16px 32px rgba(79, 70, 229, 0.28); }
@@ -291,8 +295,8 @@ label {
 .badge.in_progress::before { content: "●"; font-size: 9px; }
 
 .badge.none {
-  background: #e2e8f0;
-  color: var(--text-muted);
+  background: #94a3b8;
+  color: #fff;
 }
 .badge.none::before { content: "○"; font-size: 10px; }
 
@@ -421,10 +425,10 @@ table.dash tr:nth-child(even) td {
 
 /* ---------- Section titles: レタリング系の太字見出し ---------- */
 .section-title {
-  font-family: var(--font-display);
-  font-weight: 800;
+  font-family: var(--font-jp);
+  font-weight: 900;
   font-size: 20px;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.01em;
   color: var(--text);
   margin: 0 0 6px;
 }

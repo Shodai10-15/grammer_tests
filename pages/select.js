@@ -1,3 +1,4 @@
+import Icon from "../components/Icon";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../lib/supabase";
@@ -68,12 +69,27 @@ export default function Select() {
       <p className="muted">
         {session.seatNumber}　{session.name} さん、どの授業回に取り組みますか？
       </p>
+
+      {progress.some((r) => r.status === "passed") && (
+        <div style={{ textAlign: "center", margin: "8px 0 4px" }}>
+          <img
+            src={
+              GRAMMARS.every((g) => statusFor(progress, g.id).cls === "passed")
+                ? "/mascot/thumbsup.png"
+                : "/mascot/cheer.png"
+            }
+            alt=""
+            style={{ width: 84, height: "auto" }}
+          />
+        </div>
+      )}
+
       <button
         className="btn secondary"
         style={{ marginBottom: 16 }}
         onClick={() => router.push("/board")}
       >
-        🙋 みんなの進捗を見る
+        <Icon name="hand" size={18} /> みんなの進捗を見る
       </button>
 
       <div className="grid">

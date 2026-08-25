@@ -8,6 +8,8 @@ import DictationShadowing from "../../components/DictationShadowing";
 import TypeThenSpeak from "../../components/TypeThenSpeak";
 import HelpButton from "../../components/HelpButton";
 
+import Icon from "../../components/Icon";
+
 const GRAMMAR_LABEL = {
   G1: "疑問詞＋to",
   G2: "SVOO＋疑問詞to",
@@ -21,14 +23,14 @@ const LISTENING_INSTRUCTIONS = {
 };
 
 const STEP1_SKILLS = [
-  { key: "L", label: "🎧 Listening", desc: "音声を聞いて選ぶ" },
-  { key: "R", label: "📖 Reading", desc: "読んで意味を選ぶ" },
-  { key: "W", label: "✍️ Writing", desc: "穴埋めをタイプする" },
+  { key: "L", label: <><Icon name="headphones" /> Listening</>, desc: "音声を聞いて選ぶ" },
+  { key: "R", label: <><Icon name="book" /> Reading</>, desc: "読んで意味を選ぶ" },
+  { key: "W", label: <><Icon name="pencil" /> Writing</>, desc: "穴埋めをタイプする" },
 ];
 
 const STEP2_SKILLS = [
-  { key: "S", label: "🎧🗣️ ディクテーション＆シャドーイング", desc: "書き取って→音読する" },
-  { key: "W", label: "✍️🗣️ 英作文→発話", desc: "書いて→日本語だけ見て話す" },
+  { key: "S", label: <><Icon name="headphones" /><Icon name="mic" /> ディクテーション＆シャドーイング</>, desc: "書き取って→音読する" },
+  { key: "W", label: <><Icon name="pencil" /><Icon name="mic" /> 英作文→発話</>, desc: "書いて→日本語だけ見て話す" },
 ];
 
 export default function GrammarPage() {
@@ -207,7 +209,7 @@ export default function GrammarPage() {
               style={{ maxWidth: 260 }}
               onClick={() => step2Done && setMode({ step: 3 })}
             >
-              <div>✨ 応用問題へ</div>
+              <div><Icon name="sparkles" /> 応用問題へ</div>
               <div className={`badge ${step3Done ? "passed" : "none"}`}>
                 {step3Done ? "提出済み" : "未提出"}
               </div>

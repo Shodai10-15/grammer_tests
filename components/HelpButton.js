@@ -1,3 +1,4 @@
+import Icon from "./Icon";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
@@ -71,14 +72,14 @@ export default function HelpButton({ seatNumber, grammar, step }) {
         onClick={resolveHelp}
         disabled={loading}
       >
-        ✅ ヘルプを解除する
+        <Icon name="hand" size={18} /> ヘルプを解除する
       </button>
     );
   }
 
   return (
     <button className="help-fab" onClick={requestHelp} disabled={loading}>
-      🙋 ヘルプ
+      <Icon name="hand" size={18} /> ヘルプ
     </button>
   );
 }
