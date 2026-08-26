@@ -73,6 +73,9 @@ export default function GrammarPage() {
     return row ? "passed" : "none";
   }
 
+  const unlockedStep1 = progress.some((r) => r.step === 0 && r.skill === "S1" && r.status === "passed");
+  const unlockedStep2 = progress.some((r) => r.step === 0 && r.skill === "S2" && r.status === "passed");
+  const unlockedStep3 = progress.some((r) => r.step === 0 && r.skill === "S3" && r.status === "passed");
   const step1Done = progress.some((r) => r.step === 1 && r.status === "passed");
   const step2Done = progress.some((r) => r.step === 2 && r.status === "passed");
   const step3Done = progress.some((r) => r.step === 3 && r.status === "passed");
@@ -115,8 +118,8 @@ export default function GrammarPage() {
   async function handleQuizFinish(score, total) {
     const { step, skill } = mode;
     setResult({ score, total });
-    // Step1は取り組めば完了（理解の確認）。Step2は満点で合格、そうでなければ再挑戦を促す。
-    const passLine = step === 1 ? true : score === total;
+    // Step1・Step2ともに満点（100%）で合格。届かなければ再挑戦を促す。
+    const passLine = score === total;
     await saveProgress(step, skill, passLine ? "passed" : "in_progress", score, total);
   }
 
@@ -127,6 +130,28 @@ export default function GrammarPage() {
   }
 
   if (!session || !grammar) return null;
+
+  if (!unlockedStep1) {
+    return (
+      <div className="page">
+        <div className="header">
+          <h1>
+            {grammar}　{GRAMMAR_LABEL[grammar]}
+          </h1>
+          <button className="btn secondary" onClick={() => router.push("/select")}>
+            一覧へ
+          </button>
+        </div>
+        <UnlockGate
+          grammar={grammar}
+          step={1}
+          onUnlocked={async () => {
+            await saveProgress(0, "S1", "passed");
+          }}
+        />
+      </div>
+    );
+  }
 
   const isStep1Writing = mode && mode.step === 1 && mode.skill === "W";
   const isStep1Choice = mode && mode.step === 1 && (mode.skill === "L" || mode.skill === "R");
@@ -155,7 +180,7 @@ export default function GrammarPage() {
         <>
           <div className="card">
             <p className="section-title">Step1　理解</p>
-            <p className="muted">好きな技能を1つ以上選んで取り組もう</p>
+            <p className="muted">好きな技能を1つ以上選んで取り組もう（満点で合格）</p>
             <div className="grid">
               {STEP1_SKILLS.map((s) => (
                 <div
@@ -177,43 +202,66 @@ export default function GrammarPage() {
             <p className="section-title">
               Step2　暗記・習熟（合格ライン）
             </p>
-            <p className="muted">
-              {step1Done ? "満点・80%以上の一致で合格！何度でも挑戦しよう" : "先にStep1を1つ終えよう"}
-            </p>
-            <div className="grid">
-              {STEP2_SKILLS.map((s) => (
-                <div
-                  key={s.key}
-                  className={`tile ${!step1Done ? "locked" : ""}`}
-                  onClick={() => step1Done && startQuiz(2, s.key)}
-                >
-                  <div>{s.label}</div>
-                  <div className="muted">{s.desc}</div>
-                  <div className={`badge ${statusOf(2, s.key) === "passed" ? "passed" : "none"}`}>
-                    {statusOf(2, s.key) === "passed" ? "合格" : "未"}
-                  </div>
+            {!step1Done && <p className="muted">先にStep1を1つ終えよう</p>}
+            {step1Done && !unlockedStep2 && (
+              <UnlockGate
+                grammar={grammar}
+                step={2}
+                inline
+                onUnlocked={async () => {
+                  await saveProgress(0, "S2", "passed");
+                }}
+              />
+            )}
+            {step1Done && unlockedStep2 && (
+              <>
+                <p className="muted">満点・80%以上の一致で合格！何度でも挑戦しよう</p>
+                <div className="grid">
+                  {STEP2_SKILLS.map((s) => (
+                    <div
+                      key={s.key}
+                      className="tile"
+                      onClick={() => startQuiz(2, s.key)}
+                    >
+                      <div>{s.label}</div>
+                      <div className="muted">{s.desc}</div>
+                      <div className={`badge ${statusOf(2, s.key) === "passed" ? "passed" : "none"}`}>
+                        {statusOf(2, s.key) === "passed" ? "合格" : "未"}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
           </div>
 
           <div className="card">
             <p className="section-title">
               Step3　応用（ALTの先生に伝えよう）
             </p>
-            <p className="muted">
-              {step2Done ? "自分の言葉で1文作ろう" : "先にStep2の合格が必要です"}
-            </p>
-            <div
-              className={`tile ${!step2Done ? "locked" : ""}`}
-              style={{ maxWidth: 260 }}
-              onClick={() => step2Done && setMode({ step: 3 })}
-            >
-              <div><Icon name="sparkles" /> 応用問題へ</div>
-              <div className={`badge ${step3Done ? "passed" : "none"}`}>
-                {step3Done ? "提出済み" : "未提出"}
+            {!step2Done && <p className="muted">先にStep2の合格が必要です</p>}
+            {step2Done && !unlockedStep3 && (
+              <UnlockGate
+                grammar={grammar}
+                step={3}
+                inline
+                onUnlocked={async () => {
+                  await saveProgress(0, "S3", "passed");
+                }}
+              />
+            )}
+            {step2Done && unlockedStep3 && (
+              <div
+                className="tile"
+                style={{ maxWidth: 260 }}
+                onClick={() => setMode({ step: 3 })}
+              >
+                <div><Icon name="sparkles" /> 応用問題へ</div>
+                <div className={`badge ${step3Done ? "passed" : "none"}`}>
+                  {step3Done ? "提出済み" : "未提出"}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </>
       )}
@@ -268,13 +316,13 @@ export default function GrammarPage() {
           <p style={{ fontSize: 18 }}>
             結果：{result.score} / {result.total} 問正解
           </p>
-          {mode.step === 2 && result.score !== result.total && (
+          {mode.step !== 3 && result.score !== result.total && (
             <p style={{ color: "#c0392b" }}>
               まだ合格ラインに届いていません。もう一度挑戦してみよう！
             </p>
           )}
           <div className="btn-row">
-            {mode.step === 2 && result.score !== result.total && (
+            {mode.step !== 3 && result.score !== result.total && (
               <button className="btn" onClick={() => startQuiz(mode.step, mode.skill)}>
                 もう一度挑戦する
               </button>
@@ -349,6 +397,60 @@ const COPILOT_PROMPT = `あなたは中学2年生の英語学習をサポート�
 以下の英文について、文法的な間違いがあれば指摘し、より自然な表現があれば提案してください。
 ただし、書き直した文章は私に伝えるだけにして、あなたが直接答えを完成させないでください。
 英文：（ここに自分の文章を貼る）`;
+
+function UnlockGate({ grammar, step, onUnlocked, inline }) {
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+  const [checking, setChecking] = useState(false);
+
+  async function submit() {
+    if (!code.trim()) {
+      setError("合言葉を入力しよう");
+      return;
+    }
+    setChecking(true);
+    setError("");
+    try {
+      const res = await fetch("/api/unlock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ grammar, step, code: code.trim() }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error || "合言葉が違います");
+        setChecking(false);
+        return;
+      }
+      await onUnlocked();
+    } catch {
+      setError("通信エラーが発生しました");
+      setChecking(false);
+    }
+  }
+
+  const content = (
+    <>
+      <p className="section-title">🔒 Step{step}の合言葉</p>
+      <p className="muted">
+        ワークシートのStep{step}部分に取り組み、そこで分かる合言葉を入力してから進もう。
+      </p>
+      <input
+        type="text"
+        placeholder="合言葉を入力"
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+      />
+      {error && <p style={{ color: "var(--danger, #c0392b)", fontSize: 13 }}>{error}</p>}
+      <button className="btn" onClick={submit} disabled={checking}>
+        {checking ? "確認中..." : "進む"}
+      </button>
+    </>
+  );
+
+  if (inline) return <div>{content}</div>;
+  return <div className="card">{content}</div>;
+}
 
 function Step3Form({ grammar, onSubmit }) {
   const config = STEP3_CONFIG[grammar];
